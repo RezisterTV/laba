@@ -1,0 +1,231 @@
+#include "pch.h"
+#include <iostream>
+#include <fstream>
+#include <string>
+
+using namespace std;
+
+struct StringGrid
+{
+	int key;
+	string inf;
+};
+
+struct Tree
+{
+	StringGrid TInf;
+	Tree*L, *R;
+};
+
+void MakeList(Tree**root, int key, string inf);
+void AddTree(Tree*root, int key, string inf);
+void PoiskTree(Tree*p, int key, bool *bl, StringGrid* Res);
+void UdTree(Tree**root, int key);
+void ViewTree(Tree *root, int lvl);
+void BlnsTree(Tree** root, int l, int r, StringGrid*a, Tree**t);
+void Qsort(int l, int r, StringGrid*a);
+void VozrastKlucha(Tree*root);
+void PryamoiVivod(Tree*root);
+void ObratniyVivod(Tree*root);
+int Kol(Tree*root);
+
+int main() {
+	setlocale(LC_ALL, "Russian");
+	Tree *tree = new Tree;
+	tree = NULL;
+	ifstream input("Tree.txt");
+	int n;
+	input >> n;
+	StringGrid*a = new StringGrid[100];
+	for (int i = 0; i < n; i++) {
+		input >> a[i].key;
+		getline(input, a[i].inf);
+		getline(input, a[i].inf);
+	}
+	input.close();
+	MakeList(&tree, a[0].key, a[0].inf);
+	for (int i = 1; i < n; i++) {
+		AddTree(tree, a[i].key, a[i].inf);
+	}
+	ViewTree(tree, 0);
+	cout << endl;
+	cout << "Введите ключ нового элемента" << endl;
+	int x;
+	cin >> x;
+	cout << "Введите строку нового элемента" << endl;
+	string y;
+	getline(cin, y);
+	getline(cin, y);
+	AddTree(tree, x, y);
+	ViewTree(tree, 0);
+	cout << "Введите ключ для поиска" << endl;
+	cin >> x;
+	bool mark = false;
+	StringGrid Res;
+	PoiskTree(tree, x, &mark, &Res);
+	cout << Res.key << "(" << Res.inf << ")" << endl;
+	cout << "Введите ключ для удаления" << endl;
+	cin >> x;
+	UdTree(&tree, x);
+	ViewTree(tree, 0);
+	cout << "Вывод по возрастанию ключа" << endl;
+	VozrastKlucha(tree);
+	cout << endl;
+	cout << "Вывод в прямом порядке" << endl;
+	PryamoiVivod(tree);
+	cout << endl;
+	cout << "Вывод в обратном порядке" << endl;
+	ObratniyVivod(tree);
+	cout << endl;
+	Tree* Blns = new Tree;
+	Blns = NULL;
+	Qsort(0, n - 1, a);
+	MakeList(&Blns, a[n / 2].key, a[n / 2].inf);
+	BlnsTree(&Blns, 0, n - 1, a, &Blns);
+	cout << "Сбалансированное дерево" << endl;
+	ViewTree(Blns, 0);
+	cout << "Количество листьев дерева " << Kol(Blns);
+	return 0;
+}
+
+void MakeList(Tree**root, int key, string inf) {
+	*root = new Tree;
+	(*root)->TInf.key = key;
+	(*root)->TInf.inf = inf;
+	(*root)->L = (*root)->R = NULL;
+}
+
+void AddTree(Tree*root, int key, string inf) {
+	Tree*p = root, *q = NULL;
+	bool bl;
+	while (p != NULL) {
+		q = p;
+		bl = (key < p->TInf.key);
+		if (bl)p = p->L;
+		else p = p->R;
+	}
+	MakeList(&p, key, inf);
+	if (bl)q->L = p;
+	else q->R = p;
+}
+void PoiskTree(Tree*p, int key, bool *bl, StringGrid* Res) {
+	if ((p != NULL) && (*bl != true)) {
+		if (p->TInf.key != key) {
+			PoiskTree(p->L, key, bl, Res);
+			PoiskTree(p->R, key, bl, Res);
+		}
+		else {
+			*bl = true;
+			*Res = p->TInf;
+		}
+	}
+}
+
+void UdTree(Tree**root, int key) {
+	Tree*p = *root, *q = p, *w, *v;
+	while ((p != NULL) && (p->TInf.key != key)) {
+		q = p;
+		if (p->TInf.key > key)p = p->L;
+		else p = p->R;
+	}
+	if (p == NULL)return;
+	if ((p->L == NULL) && (p->R == NULL)) {
+		if (p == q)*root = NULL;
+		else
+			if (q->L == p)q->L = NULL;
+			else q->R = NULL;
+	}
+	else if (p->L == NULL) {
+		if (p == q)*root = p->R;
+		else if (q->L == p)q->L = p->R;
+		else q->R = p->R;
+	}
+	else if (p->R == NULL) {
+		if (p == q) *root = p->L;
+		else if (q->R == p)q->R = p->L;
+		else q->L = p->L;
+	}
+	else {
+		w = p->L;
+		if (w->R == NULL)w->R = p->R;
+		else {
+			do {
+				v = w;
+				w = w->R;
+			} while (w->R != NULL);
+			v->R = w->L;
+			w->L = p->L;
+			w->R = p->R;
+		}
+		if (p == *root)*root = w;
+		else if (q->L == p)q->L = w;
+		else q->R = w;
+	}
+	delete p;
+}
+void ViewTree(Tree *root, int lvl)
+{
+	if (root != NULL)
+	{
+		ViewTree(root->R, lvl + 1);
+		for (int i = 0; i < lvl; i++) cout << "   ";
+		cout << root->TInf.key << "(" << root->TInf.inf << ")" << endl;
+		ViewTree(root->L, lvl + 1);
+	}
+}
+void VozrastKlucha(Tree*root) {
+	if (root == NULL)return;
+	VozrastKlucha(root->L);
+	cout << root->TInf.key << " ";
+	VozrastKlucha(root->R);
+}
+void PryamoiVivod(Tree*root) {
+	if (root == NULL)return;
+	cout << root->TInf.key << " ";
+	PryamoiVivod(root->L);
+	PryamoiVivod(root->R);
+}
+void ObratniyVivod(Tree*root) {
+	if (root == NULL)return;
+	ObratniyVivod(root->L);
+	ObratniyVivod(root->R);
+	cout << root->TInf.key << " ";
+}
+void Qsort(int l, int r, StringGrid*a) {
+	int i = l;
+	int j = r;
+	StringGrid x = a[(l + r) / 2];
+	do {
+		while (a[i].key < x.key)i++;
+		while (a[j].key > x.key)j--;
+		if (i <= j) {
+			StringGrid temp = a[i];
+			a[i] = a[j];
+			a[j] = temp;
+			i++;
+			j--;
+		}
+	} while (i <= j);
+	if (i < r)Qsort(i, r, a);
+	if (l < j)Qsort(l, j, a);
+}
+void BlnsTree(Tree** root, int l, int r, StringGrid*a, Tree**t) {
+	if (*root != NULL) {
+		int m = (l + r) / 2;
+		if (m < r)BlnsTree(&(*root)->R, m + 1, r, a, t);
+		if (m > l)BlnsTree(&(*root)->L, l, m - 1, a, t);
+	}
+	else
+		if (l == r) { AddTree(*t, a[l].key, a[l].inf); }
+		else {
+			int m = (l + r) / 2;
+			AddTree(*t, a[m].key, a[m].inf);
+			if (m < r)BlnsTree(&(*root)->R, m + 1, r, a, t);
+			if (m > l)BlnsTree(&(*root)->L, l, m - 1, a, t);
+		}
+}
+int Kol(Tree*root) {
+	if (root == NULL)return 0;
+	if (root->L == NULL && root->R == NULL)return 1;
+	return Kol(root->L) + Kol(root->R);
+}
