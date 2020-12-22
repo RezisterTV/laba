@@ -1,0 +1,148 @@
+#include "pch.h"
+#include <iostream>
+#include <string>
+#include <fstream>
+#include <math.h>
+using namespace std;
+struct Date
+{
+	int day;
+	int month;
+	int year;
+};
+
+struct TInf
+{
+	string name;
+	int kol;
+	int price;
+	Date date;
+};
+struct TSel
+{
+	TInf inf;
+	TSel *A;
+};
+class Hesh {
+public:
+	Hesh(int k, string file) {
+		M = k;
+		kol = 0;
+		FileName = file;
+		H = new TSel*[M];
+		for (int i = 0; i < M; i++)H[i] = NULL;
+		ifstream fin(FileName);
+		int n;
+		fin >> n;
+		for (int i = 0; i < n; i++) {
+			TInf x;
+			getline(fin, x.name);
+			getline(fin, x.name);
+			fin >> x.kol >> x.price;
+			fin >> x.date.day >> x.date.month >> x.date.year;
+			Add(x);
+		}
+		fin.close();
+	}
+	void Add(TInf a) {
+		TSel *p = new TSel;
+		int i = Key(a.name);
+		p->A = H[i];
+		p->inf = a;
+		H[i] = p;
+		kol++;
+	}
+	void Del(string key) {
+		int i = Key(key);
+		TSel *p = H[i], *p1;
+		if (H[i] == NULL) return;
+		if (H[i]->inf.name == key) {
+			H[i] = p->A;
+			kol--;
+			delete p;
+		}
+		else {
+			p1 = p->A;
+			while (p1 != NULL) {
+				if (p1->inf.name == key) {
+					p->A = p1->A;
+					kol--;
+					delete p1;
+					return;
+				}
+				p = p1;
+				p1 = p1->A;
+			}
+		}
+	}
+	bool Read(string key, TInf*inf) {
+		int i = Key(key);
+		TSel *p = H[i], *p1;
+		bool bl = false;
+		if (p != NULL) {
+			do {
+				bl = (p->inf.name == key);
+				p1 = p;
+				p = p->A;
+			} while ((!bl) && (p != NULL));
+			if (bl)*inf = p1->inf;
+		}
+		return bl;
+	}
+	void Write() {
+		TSel *p;
+		for (int i = 0; i < M; i++) {
+			p = H[i];
+			cout << "        "<<i << endl;
+			while (p != NULL) {
+				cout << p->inf.name<<" "<<p->inf.kol<<" "<<p->inf.price<<"$ "<<p->inf.date.day<<"."<< p->inf.date.month<<"."<< p->inf.date.year;
+				cout << endl;
+				p = p->A;
+			}
+		}
+	}
+	~Hesh() {
+		ofstream fout(FileName);
+		fout << kol << endl;
+		TSel *p;
+		for (int i = 0; i < M; i++) {
+			while (H[i] != NULL) {
+				p = H[i];
+				fout << p->inf.name << endl;
+				fout << p->inf.kol << endl;
+				fout << p->inf.price << endl;
+				fout << p->inf.date.day << endl;
+				fout << p->inf.date.month << endl;
+				fout << p->inf.date.year << endl;
+				H[i] = H[i]->A;
+				delete p;
+			}
+		}
+	}
+private:
+	int kol;
+	TSel **H;
+	string FileName;
+	int M;
+	int Key(string key) { return int(key[0]-'a') % M; }
+};
+int main() {
+	Hesh x(5, "file.txt");
+	x.Write();
+	TInf z;
+	string key;
+	cout << "Enter name to found" << endl;
+	getline(cin, key);
+	if (x.Read(key, &z)) {
+		cout << z.name << " " << z.kol << " " << z.price << z.date.day << "." << z.date.month << "." << z.date.year << endl;
+	}
+	else {
+		cout << "Not found" << endl;
+	}
+	cout << "Free places for delete" << endl;
+	getline(cin, key);
+	x.Del(key);
+	x.Write();
+	x.~Hesh();
+	return 0;
+}
